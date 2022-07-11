@@ -2,11 +2,8 @@ package configuration
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -19,10 +16,6 @@ var (
 // Load environment variables
 func Load() {
 	var err error
-
-	if err = godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
 
 	ApiPort, err = strconv.Atoi(os.Getenv("API_PORT"))
 	if err != nil {
