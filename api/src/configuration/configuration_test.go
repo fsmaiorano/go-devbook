@@ -15,7 +15,7 @@ func TestLoad(t *testing.T) {
 			t.Error("ApiPort is not set")
 		}
 
-		if ConnectionString == "" {
+		if ConnectionString == "sqlserver://%s:%s@%s:%s?database=%s" {
 			t.Error("ConnectionString is not set")
 		}
 	})

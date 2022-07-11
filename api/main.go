@@ -11,8 +11,6 @@ import (
 func main() {
 	configuration.Load()
 
-	fmt.Println("Starting server on port", configuration.ApiPort)
-
 	r := router.Generate()
 
 	fmt.Println("Listening on port 5000")
