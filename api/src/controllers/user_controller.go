@@ -2,15 +2,16 @@ package controllers
 
 import (
 	"api/src/database"
+	"api/src/helpers"
 	"api/src/models"
 	"api/src/repositories"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -19,27 +20,35 @@ import (
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	request, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Fatal(err)
+		helpers.Error(w, http.StatusUnprocessableEntity, err)
+		return
 	}
 
 	var user models.User
 	if err = json.Unmarshal(request, &user); err != nil {
-		log.Fatal(err)
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := user.Prepare(); err != nil {
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
 	}
 
 	db, err := database.Connect()
 	if err != nil {
-		log.Fatal(err)
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	repository := repositories.NewRepositoryOfUsers(db)
-	userId, err := repository.Create(user)
+	user.ID, err = repository.Create(user)
 	if err != nil {
-		log.Fatal(err)
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(fmt.Sprintf("User created with id: %d", userId)))
+	helpers.Json(w, http.StatusCreated, user)
 }
 
 // GetUser gets a user
@@ -85,6 +94,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 // GetUsers gets all users
 func GetUsers(w http.ResponseWriter, r *http.Request) {
+	nameOrNick := strings.ToLower(r.URL.Query().Get("user"))
+
 	db, err := database.Connect()
 	if err != nil {
 		w.Write([]byte("Error connecting to database: " + err.Error()))
@@ -93,31 +104,19 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	defer db.Close()
 
-	lines, err := db.Query("SELECT * FROM users;")
+	repository := repositories.NewRepositoryOfUsers(db)
+	users, err := repository.FindByNameOrNick(nameOrNick)
 	if err != nil {
-		w.Write([]byte("Error preparing statement: " + err.Error()))
+		helpers.Error(w, http.StatusBadRequest, err)
 		return
 	}
 
-	defer lines.Close()
-
-	var users []models.User
-	for lines.Next() {
-		var user models.User
-
-		if err := lines.Scan(&user.ID, &user.Name, &user.Email); err != nil {
-			w.Write([]byte("Error scanning line: " + err.Error()))
-			return
-		}
-
-		users = append(users, user)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(users); err != nil {
-		w.Write([]byte("Error encoding users: " + err.Error()))
+	if len(users) == 0 {
+		helpers.Json(w, http.StatusNotFound, users)
 		return
 	}
+
+	helpers.Json(w, http.StatusOK, users)
 }
 
 // UpdateUser updates a user
