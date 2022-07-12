@@ -44,9 +44,12 @@ func (userRepository users) Create(user models.User) (uint64, error) {
 		}
 	}
 
+	defer line.Close()
+
 	return user.ID, nil
 }
 
+// GetAllUsers with name or nickname
 func (userRepository users) FindByNameOrNick(nameOrNick string) ([]models.User, error) {
 	var user models.User
 
@@ -70,31 +73,36 @@ func (userRepository users) FindByNameOrNick(nameOrNick string) ([]models.User, 
 	return users, nil
 }
 
-func (userRepository users) FindById(id uint64) (models.User, error) {
+// GetUser by ID
+func (userRepository users) FindById(ID uint64) (models.User, error) {
 	var user models.User
-	line, err := userRepository.db.Query("SELECT id, name, nickname, email, created_at, updated_at FROM users WHERE id = @id", sql.Named("id", id))
+
+	lines, err := userRepository.db.Query("SELECT id, name, nickname, email, created_at, updated_at FROM users WHERE id = @id", sql.Named("id", ID))
 	if err != nil {
-		return user, err
+		return models.User{}, err
 	}
 
-	if line.Next() {
-		if err := line.Scan(&user.ID, &user.Name, &user.Nickname, &user.Email, &user.CreatedAt, &user.UpdatedAt); err != nil {
-			return user, err
+	defer lines.Close()
+
+	if lines.Next() {
+		if err = lines.Scan(&user.ID, &user.Name, &user.Nickname, &user.Email, &user.CreatedAt, &user.UpdatedAt); err != nil {
+			return models.User{}, err
 		}
 	}
 
 	return user, nil
 }
 
-func (userRepository users) Update(user models.User) error {
-	statement, err := userRepository.db.Prepare("UPDATE users SET name = @name, nickname = @nickname, email = @email, password = @password, updated_at = @updated_at WHERE id = @id")
+// Update a user
+func (userRepository users) Update(ID uint64, user models.User) error {
+	statement, err := userRepository.db.Prepare("UPDATE users SET name = @name, nickname = @nickname, email = @email WHERE id = @id")
 	if err != nil {
 		return err
 	}
 
 	defer statement.Close()
 
-	_, err = statement.Exec(sql.Named("name", user.Name), sql.Named("nickname", user.Nickname), sql.Named("email", user.Email), sql.Named("password", user.Password), sql.Named("updated_at", user.UpdatedAt), sql.Named("id", user.ID))
+	_, err = statement.Exec(sql.Named("name", user.Name), sql.Named("nickname", user.Nickname), sql.Named("email", user.Email), sql.Named("id", user.ID))
 	if err != nil {
 		return err
 	}

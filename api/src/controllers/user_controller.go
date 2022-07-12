@@ -5,10 +5,8 @@ import (
 	"api/src/helpers"
 	"api/src/models"
 	"api/src/repositories"
-	"database/sql"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -30,7 +28,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := user.Prepare(); err != nil {
+	if err := user.Prepare("signup"); err != nil {
 		helpers.Error(w, http.StatusBadRequest, err)
 		return
 	}
@@ -55,41 +53,28 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	parameters := mux.Vars(r)
 
-	ID, err := strconv.ParseUint(parameters["id"], 10, 32)
+	ID, err := strconv.ParseUint(parameters["id"], 10, 64)
 	if err != nil {
-		w.Write([]byte("Error parsing id: " + err.Error()))
+		helpers.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	db, err := database.Connect()
 	if err != nil {
-		w.Write([]byte("Error connecting to database: " + err.Error()))
+		helpers.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	line, err := db.Query("SELECT * FROM users WHERE id = @id;", sql.Named("id", ID))
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfUsers(db)
+	user, err := repository.FindById(ID)
 	if err != nil {
-		w.Write([]byte("Error preparing statement: " + err.Error()))
+		helpers.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	var user models.User
-	if line.Next() {
-		if err := line.Scan(&user.ID, &user.Name, &user.Email); err != nil {
-			w.Write([]byte("Error scanning line: " + err.Error()))
-			return
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("User not found"))
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(user); err != nil {
-		w.Write([]byte("Error encoding user: " + err.Error()))
-		return
-	}
+	helpers.Json(w, http.StatusOK, user)
 }
 
 // GetUsers gets all users
@@ -121,30 +106,46 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 
 // UpdateUser updates a user
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+	ID, err := strconv.ParseUint(parameters["id"], 10, 64)
+	if err != nil {
+		helpers.Error(w, http.StatusBadGateway, err)
+		return
+	}
+
 	request, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Fatal(err)
+		helpers.Error(w, http.StatusUnprocessableEntity, err)
+		return
 	}
 
 	var user models.User
 	if err = json.Unmarshal(request, &user); err != nil {
-		log.Fatal(err)
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = user.Prepare("update"); err != nil {
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
 	}
 
 	db, err := database.Connect()
 	if err != nil {
-		w.Write([]byte("Error connecting to database: " + err.Error()))
-		return
-	}
-
-	repository := repositories.NewRepositoryOfUsers(db)
-	err = repository.Update(user)
-	if err != nil {
-		w.Write([]byte("Error updating user: " + err.Error()))
+		helpers.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	defer db.Close()
+
+	repository := repositories.NewRepositoryOfUsers(db)
+	err = repository.Update(ID, user)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusNoContent, nil)
 }
 
 // DeleteUser deletes a user
