@@ -39,6 +39,8 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defer db.Close()
+
 	repository := repositories.NewRepositoryOfUsers(db)
 	user.ID, err = repository.Create(user)
 	if err != nil {

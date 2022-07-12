@@ -125,3 +125,22 @@ func (userRepository users) Delete(id uint64) error {
 
 	return nil
 }
+
+func (userRepository users) AuthenticationFindByEmail(email string) (models.User, error) {
+	var user models.User
+
+	lines, err := userRepository.db.Query("SELECT id, name, nickname, email, password, created_at, updated_at FROM users WHERE email = @email", sql.Named("email", email))
+	if err != nil {
+		return models.User{}, err
+	}
+
+	defer lines.Close()
+
+	if lines.Next() {
+		if err = lines.Scan(&user.ID, &user.Name, &user.Nickname, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt); err != nil {
+			return models.User{}, err
+		}
+	}
+
+	return user, nil
+}
