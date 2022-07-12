@@ -32,7 +32,7 @@ var routesUsers = []Route{
 		WithAuthentication: false,
 	},
 	{
-		Uri:                "/users",
+		Uri:                "/users/{id}",
 		Method:             http.MethodDelete,
 		Handler:            controllers.DeleteUser,
 		WithAuthentication: false,

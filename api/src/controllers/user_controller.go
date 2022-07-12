@@ -164,6 +164,8 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defer db.Close()
+
 	repository := repositories.NewRepositoryOfUsers(db)
 	err = repository.Delete(ID)
 	if err != nil {
@@ -171,5 +173,5 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer db.Close()
+	helpers.Json(w, http.StatusNoContent, nil)
 }
