@@ -7,6 +7,7 @@ import (
 	"api/src/repositories"
 	"api/src/security"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -43,5 +44,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, _ := security.GenerateToken(storedUser.ID)
+
+	fmt.Fprintln(w, token)
 	w.Write([]byte("Login successful"))
 }

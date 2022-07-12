@@ -14,6 +14,8 @@ var (
 	ConnectionString = ""
 	// The port to listen on
 	ApiPort = 0
+	// The secret key to use for JWT
+	SecretKey []byte
 )
 
 // Load environment variables
@@ -36,4 +38,6 @@ func Load() {
 			os.Getenv("DB_HOST"),
 			os.Getenv("DB_PORT"),
 			os.Getenv("DB_NAME"))
+
+	SecretKey = []byte(os.Getenv("API_SECRET_KEY"))
 }

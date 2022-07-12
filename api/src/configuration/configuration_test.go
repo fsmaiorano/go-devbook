@@ -18,5 +18,9 @@ func TestLoad(t *testing.T) {
 		if ConnectionString == "sqlserver://%s:%s@%s:%s?database=%s" {
 			t.Error("ConnectionString is not set")
 		}
+
+		if SecretKey == nil {
+			t.Error("SecretKey is not set")
+		}
 	})
 }
