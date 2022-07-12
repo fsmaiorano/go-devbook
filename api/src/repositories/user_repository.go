@@ -102,7 +102,7 @@ func (userRepository users) Update(ID uint64, user models.User) error {
 
 	defer statement.Close()
 
-	_, err = statement.Exec(sql.Named("name", user.Name), sql.Named("nickname", user.Nickname), sql.Named("email", user.Email), sql.Named("id", user.ID))
+	_, err = statement.Exec(sql.Named("name", user.Name), sql.Named("nickname", user.Nickname), sql.Named("email", user.Email), sql.Named("id", ID))
 	if err != nil {
 		return err
 	}
