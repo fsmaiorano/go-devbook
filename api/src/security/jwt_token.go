@@ -2,6 +2,7 @@ package security
 
 import (
 	"api/src/configuration"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -31,8 +32,11 @@ func ValidateToken(r *http.Request) error {
 		return err
 	}
 
-	fmt.Println(token)
-	return nil
+	if _, ok := token.Claims.(jwt.MapClaims); !ok && !token.Valid {
+		return nil
+	}
+
+	return errors.New("invalid token")
 }
 
 func extractToken(r *http.Request) string {
@@ -47,7 +51,7 @@ func extractToken(r *http.Request) string {
 
 func returnVerificationKey(token *jwt.Token) (interface{}, error) {
 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-		return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 	}
 
 	return configuration.SecretKey, nil
