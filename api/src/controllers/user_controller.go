@@ -5,6 +5,7 @@ import (
 	"api/src/helpers"
 	"api/src/models"
 	"api/src/repositories"
+	"api/src/security"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -112,6 +113,17 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ID, err := strconv.ParseUint(parameters["id"], 10, 64)
 	if err != nil {
 		helpers.Error(w, http.StatusBadGateway, err)
+		return
+	}
+
+	userIDToken, err := security.ExtractTokenUserId(r)
+	if err != nil {
+		helpers.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if ID != userIDToken {
+		helpers.Error(w, http.StatusForbidden, err)
 		return
 	}
 
