@@ -165,16 +165,26 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 // DeleteUser deletes a user
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	parameters := mux.Vars(r)
-
-	ID, err := strconv.ParseUint(parameters["id"], 10, 32)
+	ID, err := strconv.ParseUint(parameters["id"], 10, 64)
 	if err != nil {
-		w.Write([]byte("Error parsing id: " + err.Error()))
+		helpers.Error(w, http.StatusBadGateway, err)
+		return
+	}
+
+	userIDToken, err := security.ExtractTokenUserId(r)
+	if err != nil {
+		helpers.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if ID != userIDToken {
+		helpers.Error(w, http.StatusForbidden, err)
 		return
 	}
 
 	db, err := database.Connect()
 	if err != nil {
-		w.Write([]byte("Error connecting to database: " + err.Error()))
+		helpers.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -183,7 +193,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	repository := repositories.NewRepositoryOfUsers(db)
 	err = repository.Delete(ID)
 	if err != nil {
-		w.Write([]byte("Error deleting user: " + err.Error()))
+		helpers.Error(w, http.StatusBadRequest, err)
 		return
 	}
 

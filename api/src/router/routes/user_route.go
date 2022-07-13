@@ -11,7 +11,7 @@ var routesUsers = []Route{
 		Uri:                "/users",
 		Method:             http.MethodPost,
 		Handler:            controllers.CreateUser,
-		WithAuthentication: true,
+		WithAuthentication: false,
 	},
 	{
 		Uri:                "/users",
