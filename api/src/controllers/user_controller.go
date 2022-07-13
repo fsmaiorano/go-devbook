@@ -199,3 +199,40 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	helpers.Json(w, http.StatusNoContent, nil)
 }
+
+func FollowUser(w http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+	userID, err := strconv.ParseUint(parameters["id"], 10, 64)
+	if err != nil {
+		helpers.Error(w, http.StatusBadGateway, err)
+		return
+	}
+
+	followerID, err := security.ExtractTokenUserId(r)
+	if err != nil {
+		helpers.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userID == followerID {
+		helpers.Error(w, http.StatusForbidden, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfUsers(db)
+	err = repository.Follow(userID, followerID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusNoContent, nil)
+}
