@@ -181,12 +181,60 @@ func (userRepository users) Follow(userID uint64, followerID uint64) error {
 	return nil
 }
 
-// select with not exists (select * from followers where user_id = @user_id and follower_id = @follower_id)
+func (userRepository users) Unfollow(userID uint64, followerID uint64) error {
+	statement, err := userRepository.db.Prepare("DELETE FROM followers WHERE user_id = @user_id AND follower_id = @follower_id")
+	if err != nil {
+		return err
+	}
 
-// SELECT TOP 0 * INTO TempTable FROM MyTable;
+	defer statement.Close()
 
-// INSERT INTO TempTable (Column1, Column2) VALUES ('Value1', 'Value2');
+	_, err = statement.Exec(sql.Named("user_id", userID), sql.Named("follower_id", followerID))
+	if err != nil {
+		return err
+	}
 
-// INSERT INTO MyTable SELECT A.* FROM TempTable A LEFT JOIN MyTable B ON A.UniqueField = B.UniqueField WHERE B.UniqueField IS NULL;
+	return nil
+}
 
-// DROP TABLE TempTable;
+func (userRepository users) GetFollowers(userID uint64) ([]models.User, error) {
+	var user models.User
+
+	lines, err := userRepository.db.Query("SELECT u.id, u.name, u.nickname, u.email, u.created_at, u.updated_at FROM users u INNER JOIN followers f on u.id = f.follower_id where f.user_id = @user_id", sql.Named("user_id", userID))
+	if err != nil {
+		return nil, err
+	}
+
+	defer lines.Close()
+
+	var users []models.User
+	for lines.Next() {
+		if err = lines.Scan(&user.ID, &user.Name, &user.Nickname, &user.Email, &user.CreatedAt, &user.UpdatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+func (userRepository users) GetFollowing(userID uint64) ([]models.User, error) {
+	var user models.User
+
+	lines, err := userRepository.db.Query("SELECT u.id, u.name, u.nickname, u.email, u.created_at, u.updated_at FROM users u INNER JOIN followers f on u.id = f.user_id where f.follower_id = @user_id", sql.Named("user_id", userID))
+	if err != nil {
+		return nil, err
+	}
+
+	defer lines.Close()
+
+	var users []models.User
+	for lines.Next() {
+		if err = lines.Scan(&user.ID, &user.Name, &user.Nickname, &user.Email, &user.CreatedAt, &user.UpdatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}

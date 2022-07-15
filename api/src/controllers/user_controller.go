@@ -7,6 +7,7 @@ import (
 	"api/src/repositories"
 	"api/src/security"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -215,7 +216,7 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if userID == followerID {
-		helpers.Error(w, http.StatusForbidden, err)
+		helpers.Error(w, http.StatusForbidden, errors.New("You can't follow yourself"))
 		return
 	}
 
@@ -235,4 +236,95 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.Json(w, http.StatusNoContent, nil)
+}
+
+func UnfollowUser(w http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+	userID, err := strconv.ParseUint(parameters["id"], 10, 64)
+	if err != nil {
+		helpers.Error(w, http.StatusBadGateway, err)
+		return
+	}
+
+	followerID, err := security.ExtractTokenUserId(r)
+	if err != nil {
+		helpers.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userID == followerID {
+		helpers.Error(w, http.StatusForbidden, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfUsers(db)
+	err = repository.Unfollow(userID, followerID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusNoContent, nil)
+}
+
+// GetFollowers returns a list of followers
+func Followers(w http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+	userID, err := strconv.ParseUint(parameters["id"], 10, 64)
+	if err != nil {
+		helpers.Error(w, http.StatusBadGateway, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfUsers(db)
+	followers, err := repository.GetFollowers(userID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusOK, followers)
+}
+
+// Following returns the users that the user is following
+func Following(w http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+	userID, err := strconv.ParseUint(parameters["id"], 10, 64)
+	if err != nil {
+		helpers.Error(w, http.StatusBadGateway, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfUsers(db)
+	following, err := repository.GetFollowing(userID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusOK, following)
 }

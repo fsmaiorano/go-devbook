@@ -39,4 +39,11 @@ CREATE TABLE followers
 );
 
 
---DROP DATABASE devbook 
+-- drop database devbook
+-- select * from users
+-- select * from followers
+-- -- followers
+-- SELECT u.id, u.name, u.nickname, u.email, u.created_at, u.updated_at FROM users u INNER JOIN followers f on u.id = f.follower_id where f.user_id = 1
+
+-- -- following
+-- SELECT u.id, u.name, u.nickname, u.email, u.created_at, u.updated_at FROM users u INNER JOIN followers f on u.id = f.user_id where f.follower_id = 2

@@ -43,4 +43,22 @@ var routesUsers = []Route{
 		Handler:            controllers.FollowUser,
 		WithAuthentication: true,
 	},
+	{
+		Uri:                "/users/{id}/unfollow",
+		Method:             http.MethodPost,
+		Handler:            controllers.UnfollowUser,
+		WithAuthentication: true,
+	},
+	{
+		Uri:                "/users/{id}/followers",
+		Method:             http.MethodGet,
+		Handler:            controllers.Followers,
+		WithAuthentication: true,
+	},
+	{
+		Uri:                "/users/{id}/following",
+		Method:             http.MethodGet,
+		Handler:            controllers.Following,
+		WithAuthentication: true,
+	},
 }
