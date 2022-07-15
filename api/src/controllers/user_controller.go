@@ -201,6 +201,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	helpers.Json(w, http.StatusNoContent, nil)
 }
 
+// Follow a user by id
 func FollowUser(w http.ResponseWriter, r *http.Request) {
 	parameters := mux.Vars(r)
 	userID, err := strconv.ParseUint(parameters["id"], 10, 64)
@@ -216,7 +217,7 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if userID == followerID {
-		helpers.Error(w, http.StatusForbidden, errors.New("You can't follow yourself"))
+		helpers.Error(w, http.StatusForbidden, errors.New("you can't follow yourself"))
 		return
 	}
 
@@ -238,6 +239,7 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 	helpers.Json(w, http.StatusNoContent, nil)
 }
 
+// Unfollow a user by id
 func UnfollowUser(w http.ResponseWriter, r *http.Request) {
 	parameters := mux.Vars(r)
 	userID, err := strconv.ParseUint(parameters["id"], 10, 64)
@@ -327,4 +329,60 @@ func Following(w http.ResponseWriter, r *http.Request) {
 	}
 
 	helpers.Json(w, http.StatusOK, following)
+}
+
+func UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+	userID, err := strconv.ParseUint(parameters["id"], 10, 64)
+	if err != nil {
+		helpers.Error(w, http.StatusBadGateway, err)
+		return
+	}
+
+	userIDToken, err := security.ExtractTokenUserId(r)
+	if err != nil {
+		helpers.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userID != userIDToken {
+		helpers.Error(w, http.StatusForbidden, errors.New("you can't update the password of another user"))
+		return
+	}
+
+	var pass models.Password
+	err = json.NewDecoder(r.Body).Decode(&pass)
+	if err != nil {
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfUsers(db)
+
+	storedPassword, err := repository.GetUserPassword(userID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err := security.VerifyPassword(storedPassword, pass.CurrentPassword); err != nil {
+		helpers.Error(w, http.StatusUnauthorized, errors.New("invalid password"))
+		return
+	}
+
+	err = repository.UpdatePassword(userID, pass.NewPassword)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusNoContent, nil)
 }

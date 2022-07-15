@@ -61,4 +61,10 @@ var routesUsers = []Route{
 		Handler:            controllers.Following,
 		WithAuthentication: true,
 	},
+	{
+		Uri:                "/users/{id}/update-password",
+		Method:             http.MethodPost,
+		Handler:            controllers.UpdatePassword,
+		WithAuthentication: true,
+	},
 }

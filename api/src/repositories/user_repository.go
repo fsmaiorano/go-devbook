@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"api/src/models"
+	"api/src/security"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -237,4 +238,44 @@ func (userRepository users) GetFollowing(userID uint64) ([]models.User, error) {
 	}
 
 	return users, nil
+}
+
+func (userRepository users) GetUserPassword(userID uint64) (string, error) {
+	var password string
+
+	lines, err := userRepository.db.Query("SELECT password FROM users WHERE id = @user_id", sql.Named("user_id", userID))
+	if err != nil {
+		return "", err
+	}
+
+	defer lines.Close()
+
+	if lines.Next() {
+		if err = lines.Scan(&password); err != nil {
+			return "", err
+		}
+	}
+
+	return password, nil
+}
+
+func (userRepository users) UpdatePassword(ID uint64, password string) error {
+	statement, err := userRepository.db.Prepare("UPDATE users SET password = @password WHERE id = @id")
+	if err != nil {
+		return err
+	}
+
+	defer statement.Close()
+
+	passwordWithHash, err := security.Hash(password)
+	if err != nil {
+		return err
+	}
+
+	_, err = statement.Exec(sql.Named("password", string(passwordWithHash)), sql.Named("id", ID))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
