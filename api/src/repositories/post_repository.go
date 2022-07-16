@@ -39,3 +39,22 @@ func (postRepository posts) Create(post models.Post, userID uint64) (uint64, err
 
 	return post.ID, nil
 }
+
+func (postRepository posts) FindByID(id uint64) (models.Post, error) {
+	var post models.Post
+
+	line, err := postRepository.db.Query("SELECT p.id, p.title, p.content, p.author_id, p.likes, p.created_at, p.updated_at, u.nickname FROM posts p INNER JOIN users u on u.id = p.author_id WHERE p.id = @post_id ", sql.Named("post_id", id))
+	if err != nil {
+		return post, err
+	}
+
+	if line.Next() {
+		if err := line.Scan(&post.ID, &post.Title, &post.Content, &post.AuthorID, &post.Likes, &post.CreatedAt, &post.UpdatedAt, &post.AuthorNickname); err != nil {
+			return post, err
+		}
+	}
+
+	defer line.Close()
+
+	return post, nil
+}
