@@ -245,3 +245,71 @@ func FindPostsByUser(w http.ResponseWriter, r *http.Request) {
 
 	helpers.Json(w, http.StatusOK, posts)
 }
+
+func LikePost(w http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+
+	postID, err := strconv.ParseUint(parameters["id"], 10, 64)
+	if err != nil {
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfPosts(db)
+
+	storedPost, err := repository.FindByID(postID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = repository.Like(storedPost.ID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusOK, nil)
+}
+
+func UnlikePost(w http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+
+	postID, err := strconv.ParseUint(parameters["id"], 10, 64)
+	if err != nil {
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfPosts(db)
+
+	storedPost, err := repository.FindByID(postID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = repository.Unlike(storedPost.ID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusOK, nil)
+}

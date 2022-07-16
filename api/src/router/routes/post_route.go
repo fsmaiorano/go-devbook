@@ -42,4 +42,16 @@ var routesPosts = []Route{
 		Handler:            controllers.FindPostsByUser,
 		WithAuthentication: true,
 	},
+	{
+		Uri:                "/posts/{id}/like",
+		Method:             http.MethodPost,
+		Handler:            controllers.LikePost,
+		WithAuthentication: true,
+	},
+	{
+		Uri:                "/posts/{id}/unlike",
+		Method:             http.MethodPost,
+		Handler:            controllers.UnlikePost,
+		WithAuthentication: true,
+	},
 }

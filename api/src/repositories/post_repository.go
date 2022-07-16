@@ -128,3 +128,31 @@ func (postRepository posts) FindByUserID(userID uint64) ([]models.Post, error) {
 
 	return posts, nil
 }
+
+func (postRepository posts) Like(postID uint64) error {
+	statement, err := postRepository.db.Prepare("UPDATE posts SET likes = likes + 1 WHERE id = @id")
+	if err != nil {
+		return err
+	}
+
+	_, err = statement.Exec(sql.Named("id", postID))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (postRepository posts) Unlike(postID uint64) error {
+	statement, err := postRepository.db.Prepare("UPDATE posts SET likes = likes - 1 WHERE id = @id")
+	if err != nil {
+		return err
+	}
+
+	_, err = statement.Exec(sql.Named("id", postID))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
