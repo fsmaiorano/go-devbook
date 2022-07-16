@@ -9,13 +9,13 @@ var routesAuthentication = []Route{
 	{
 		Uri:                "/",
 		Method:             http.MethodGet,
-		Handler:            controllers.Authentication,
+		Handler:            controllers.LoadAuthenticationPage,
 		WithAuthentication: false,
 	},
 	{
 		Uri:                "/login",
 		Method:             http.MethodGet,
-		Handler:            controllers.Authentication,
+		Handler:            controllers.LoadAuthenticationPage,
 		WithAuthentication: false,
 	},
 }

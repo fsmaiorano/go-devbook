@@ -17,6 +17,7 @@ type Route struct {
 // ConfigureRoutes is a function that configures the routes for the application
 func Configuration(r *mux.Router) *mux.Router {
 	routes := routesAuthentication
+	routes = append(routes, routesUsers...)
 
 	for _, route := range routes {
 
@@ -26,6 +27,9 @@ func Configuration(r *mux.Router) *mux.Router {
 
 		r.HandleFunc(route.Uri, route.Handler).Methods(route.Method)
 	}
+
+	fileServer := http.FileServer(http.Dir("./assets/"))
+	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fileServer))
 
 	return r
 }
