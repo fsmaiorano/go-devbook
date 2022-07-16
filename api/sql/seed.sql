@@ -32,6 +32,7 @@ INSERT INTO devbook.dbo.posts
 VALUES
     ('Post 1', 'This is the first post', 1),
     ('Post 2', 'This is the second post', 1),
-    ('Post 3', 'This is the third post', 3),
-    ('Post 4', 'This is the fourth post', 4),
-    ('Post 5', 'This is the fifth post', 5);
+    ('Post 3', 'This is the third post', 2),
+    ('Post 4', 'This is the fourth post', 2),
+    ('Post 5', 'This is the fifth post', 2);
+

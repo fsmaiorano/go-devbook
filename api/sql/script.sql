@@ -58,7 +58,8 @@ CREATE TABLE posts
 -- drop database devbook
 -- select * from users
 -- select * from followers
-select * from posts
+select *
+from posts
 -- -- followers
 -- SELECT u.id, u.name, u.nickname, u.email, u.created_at, u.updated_at FROM users u INNER JOIN followers f on u.id = f.follower_id where f.user_id = 1
 

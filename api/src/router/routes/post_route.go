@@ -30,10 +30,16 @@ var routesPosts = []Route{
 		Handler:            controllers.UpdatePost,
 		WithAuthentication: true,
 	},
-	// {
-	// 	Uri:                "/posts/{id}",
-	// 	Method:             http.MethodDelete,
-	// 	Handler:            controllers.DeletePost,
-	// 	WithAuthentication: true,
-	// },
+	{
+		Uri:                "/posts/{id}",
+		Method:             http.MethodDelete,
+		Handler:            controllers.DeletePost,
+		WithAuthentication: true,
+	},
+	{
+		Uri:                "/users/{id}/posts",
+		Method:             http.MethodGet,
+		Handler:            controllers.FindPostsByUser,
+		WithAuthentication: true,
+	},
 }
