@@ -58,3 +58,38 @@ func (postRepository posts) FindByID(id uint64) (models.Post, error) {
 
 	return post, nil
 }
+
+func (postRepository posts) FindAll(userID uint64) ([]models.Post, error) {
+	var post models.Post
+
+	lines, err := postRepository.db.Query("SELECT DISTINCT p.id, p.title, p.content, p.author_id, p.likes, p.created_at, p.updated_at, u.nickname FROM posts p INNER JOIN users u on u.id = p.author_id WHERE p.author_id = @user_id order by p.created_at desc", sql.Named("user_id", userID))
+	if err != nil {
+		return nil, err
+	}
+
+	defer lines.Close()
+
+	var posts []models.Post
+	for lines.Next() {
+		if err := lines.Scan(&post.ID, &post.Title, &post.Content, &post.AuthorID, &post.Likes, &post.CreatedAt, &post.UpdatedAt, &post.AuthorNickname); err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	return posts, nil
+}
+
+func (postRepository posts) Update(id uint64, post models.Post) error {
+	statement, err := postRepository.db.Prepare("UPDATE posts SET title = @title, content = @content WHERE id = @id")
+	if err != nil {
+		return err
+	}
+
+	_, err = statement.Exec(sql.Named("id", id), sql.Named("title", post.Title), sql.Named("content", post.Content))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

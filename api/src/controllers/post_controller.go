@@ -67,9 +67,9 @@ func GetPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, erro := database.Connect()
-	if erro != nil {
-		helpers.Error(w, http.StatusInternalServerError, erro)
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -86,5 +86,90 @@ func GetPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPosts(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("CreatePost"))
+	userID, err := security.ExtractTokenUserId(r)
+	if err != nil {
+		helpers.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfPosts(db)
+	posts, err := repository.FindAll(userID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusOK, posts)
+}
+
+func UpdatePost(w http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+
+	postID, err := strconv.ParseUint(parameters["id"], 10, 64)
+	if err != nil {
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	userID, err := security.ExtractTokenUserId(r)
+	if err != nil {
+		helpers.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	repository := repositories.NewRepositoryOfPosts(db)
+
+	storedPost, err := repository.FindByID(postID)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if storedPost.AuthorID != userID {
+		helpers.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	request, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		helpers.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var post models.Post
+	if err = json.Unmarshal(request, &post); err != nil {
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	post.AuthorID = userID
+
+	if err = post.Prepare(); err != nil {
+		helpers.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	err = repository.Update(storedPost.ID, post)
+	if err != nil {
+		helpers.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	helpers.Json(w, http.StatusOK, post)
 }
